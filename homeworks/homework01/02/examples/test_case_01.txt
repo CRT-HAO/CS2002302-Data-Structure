@@ -1,0 +1,16 @@
+A+B*C/D-E/F
+prefix
+/*+ABC-D/EF
+postfix
+
+
+DBEAFCG
+prefix
+ABDECFG
+postfix
+
+
+DBHEIAFJCG
+postfix
+DHIEBJFGCA
+prefix
