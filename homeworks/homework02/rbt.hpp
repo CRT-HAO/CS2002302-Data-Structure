@@ -62,6 +62,9 @@ private:
     newRoot->parent = node->parent;
     node->parent = newRoot;
 
+    newRoot->red = false;
+    newRoot->leftChild->red = true;
+
     // this->n_rotations += 1;
   }
 
@@ -94,6 +97,9 @@ private:
     newRoot->parent = node->parent;
     node->parent = newRoot;
 
+    newRoot->red = false;
+    newRoot->rightChild->red = true;
+
     // this->n_rotations += 1;
   }
 
@@ -116,91 +122,6 @@ private:
     return node;
   }
 
-  void fixCase1(Node *node, Node *parent, Node *grandparent, Node *uncle) {
-    parent->red = false;
-    grandparent->red = true;
-    uncle->red = false;
-  }
-
-  void fixInsert(Node *node) {
-    while (node != this->root && node->parent != nullptr && node->parent->red) {
-      Node *parent = node->parent;
-      Node *grandparent = parent->parent;
-      Node *uncle = nullptr;
-
-      if (parent == grandparent->leftChild) {
-        // left side
-
-        uncle = grandparent->rightChild;
-
-        if (uncle != nullptr && uncle->red) {
-          // case 1
-
-          this->fixCase1(node, parent, grandparent, uncle);
-
-          // switch current node to grandparent
-          node = grandparent;
-        } else {
-          if (parent->rightChild == node) {
-            // case 2
-            // if the uncle is black(or null) and the node is right child (looks
-            // like a triangle)
-
-            this->rotateLeft(parent);
-            node = parent->parent;
-            parent = node;
-          }
-
-          // case 3
-          // if the uncle is black(or null) and the node is left child (looks
-          // like a line)
-
-          parent->red = false;
-          grandparent->red = true;
-          this->rotateRight(grandparent);
-
-          this->n_rotations += 1;
-        }
-      } else {
-        // right side
-
-        uncle = grandparent->leftChild;
-
-        if (uncle != nullptr && uncle->red) {
-          // case 1
-
-          this->fixCase1(node, parent, grandparent, uncle);
-
-          // switch current node to grandparent
-          node = grandparent;
-        } else {
-          if (parent->leftChild == node) {
-            // case 2
-            // if the uncle is black(or null) and the node is left child (looks
-            // like a triangle)
-
-            this->rotateRight(parent);
-            node = parent->parent;
-            parent = node;
-          }
-
-          // case 3
-          // if the uncle is black(or null) and the node is right child (looks
-          // like a line)
-
-          parent->red = false;
-          grandparent->red = true;
-          this->rotateLeft(grandparent);
-
-          this->n_rotations += 1;
-        }
-      }
-    }
-
-    // finally, set the root to black
-    this->root->red = false;
-  }
-
   void printTreeHelper(Node *root, int space) const {
     if (root != nullptr) {
       space += 10;
@@ -214,13 +135,136 @@ private:
     }
   }
 
+  Node *changeColor(Node *root, Node *newNode) {
+    if (root == nullptr || newNode == nullptr)
+      return nullptr;
+
+    Node *result = root;
+
+    if (newNode->value > root->value) {
+      result = changeColor(root->rightChild, newNode);
+    } else if (newNode->value < root->value) {
+      result = changeColor(root->leftChild, newNode);
+    }
+
+    if (!(root->red) && (root->leftChild != nullptr && root->leftChild->red) &&
+        (root->rightChild != nullptr && root->rightChild->red)) {
+      // check if current root is black and left child and right child are red,
+      // reverse their color
+
+      root->red = true;
+      root->leftChild->red = false;
+      root->rightChild->red = false;
+    }
+
+    if (result == nullptr)
+      return root;
+
+    return result;
+  }
+
+  void fixTree(Node *node, Node *newNode) {
+    if (node == nullptr || newNode == nullptr)
+      return;
+
+    Node *child = nullptr;
+    Node *grandchild = nullptr;
+
+    bool left = false;
+    bool right = false;
+
+    if (newNode->value >= node->value) {
+      // right
+      child = node->rightChild;
+      right = true;
+
+      if (child == nullptr)
+        return;
+
+      if (newNode->value >= child->value) {
+        // right
+        grandchild = child->rightChild;
+      } else {
+        // left
+        grandchild = child->leftChild;
+      }
+    } else {
+      // left
+      child = node->leftChild;
+      left = true;
+
+      if (child == nullptr)
+        return;
+
+      if (newNode->value >= child->value) {
+        // right
+        grandchild = child->rightChild;
+      } else {
+        // left
+        grandchild = child->leftChild;
+      }
+    }
+
+    if (grandchild == nullptr)
+      return;
+
+    if (child->red && grandchild->red) {
+      // if child and grandchild are red, do rotation
+
+      if (node->rightChild == child) {
+        // right
+        if (child->leftChild == grandchild)
+          // RL (triangle)
+          this->rotateRight(child);
+
+        // RR (line)
+        this->rotateLeft(node);
+
+        this->n_rotations += 1;
+      } else if (node->leftChild == child) {
+        // left
+        if (child->rightChild == grandchild)
+          // LR (triangle)
+          this->rotateLeft(child);
+
+        // LL (line)
+        this->rotateRight(node);
+
+        this->n_rotations += 1;
+      }
+    } else {
+      // otherwise child or grandchild is black, keep fix the tree
+
+      if (right)
+        this->fixTree(node->rightChild, newNode);
+      else if (left)
+        this->fixTree(node->leftChild, newNode);
+    }
+  }
+
 public:
   void insert(char val) {
+    // insert: change color > rotate > insert > rotate > change root to black
+
+    // initialize new node in red
     Node *newNode = new Node(val, true);
+
+    // change color
+    this->changeColor(this->root, newNode);
+
+    // fix tree (rotate)
+    this->fixTree(this->root, newNode);
+
+    // insert
     Node *node = this->binaryInsert(this->root, newNode);
     if (this->root == nullptr)
       this->root = node;
-    this->fixInsert(newNode);
+
+    // fix tree (rotate)
+    this->fixTree(this->root, newNode);
+
+    // change root to black
+    this->root->red = false;
   }
 
   void printTree(std::ostream &out) const {

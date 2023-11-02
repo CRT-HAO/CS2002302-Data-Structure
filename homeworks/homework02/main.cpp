@@ -47,7 +47,7 @@ int main() {
     tree.insert(c);
   }
 
-  tree.printTree(cout);
+  // tree.printTree(cout);
 
   std::string postfixBlack;
   std::string prefixRed;
