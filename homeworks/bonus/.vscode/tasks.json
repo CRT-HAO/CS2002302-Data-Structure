@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Compile",
+      "type": "process",
+      "command": "clang++",
+      "args": [
+        "${workspaceFolder}/main.cpp",
+        "-g",
+        "-o",
+        "${workspaceFolder}/build/${fileBasenameNoExtension}",
+        "-Wall",
+        "-std=c++14"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    }
+  ]
+}
